@@ -5,6 +5,7 @@ from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import TemplateSendMessage, ButtonsTemplate, URITemplateAction
 
 logging.basicConfig(format='%(name)s %(levelname)s %(message)s', level=logging.DEBUG)
 
@@ -52,9 +53,28 @@ def handle_message(event):
     logging.debug('event: ' + str(event))
     logging.debug('event.reply_token: ' + event.reply_token)
     logging.debug('event.message.text: ' + event.message.text)
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text))
+    if event.message.text == 'template':
+        buttons_template_message = TemplateSendMessage(
+            alt_text='Buttons template',
+            template=ButtonsTemplate(
+                thumbnail_image_url='https://example.com/image.jpg',
+                title='Menu',
+                text='Please select',
+                actions=[
+                    URITemplateAction(
+                        label='Click to open KKBOX',
+                        uri='kkbox://open'
+                    )
+                ]
+            )
+        )
+        line_bot_api.reply_message(
+                event.reply_token,
+                buttons_template_message)
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=event.message.text))
 
 
 if __name__ == '__main__':
