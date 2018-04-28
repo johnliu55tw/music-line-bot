@@ -61,8 +61,8 @@ def handle_message(event):
                 text='Please select',
                 actions=[
                     URITemplateAction(
-                        label='Click to open KKBOX',
-                        uri='kkbox://open'
+                        label='Open KKBOX',
+                        uri='https://event.kkbox.com/content/song/GlcNVyRZylVNH8isik'
                     )
                 ]
             )
