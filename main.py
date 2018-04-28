@@ -1,9 +1,12 @@
 import os
+import logging
 
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
+
+logging.basicConfig(format='%(name)s %(levelname)s %(message)s', level=logging.DEBUG)
 
 app = Flask(__name__)
 
@@ -34,7 +37,7 @@ def index():
 def message():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
-    app.logger.info('Request body: ' + body)
+    logging.debug('Request body: ' + body)
 
     try:
         handler.handle(body, signature)
@@ -46,6 +49,9 @@ def message():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    logging.debug('event: ' + str(event))
+    logging.debug('event.reply_token: ' + event.reply_token)
+    logging.debug('event.message.text: ' + event.message.text)
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=event.message.text))
