@@ -1,22 +1,11 @@
-import os
-import logging
-
 from flask import Flask
-
-logging.basicConfig(format='%(name)s %(levelname)s %(message)s', level=logging.DEBUG)
+from kkbox_line_bot import config
 
 app = Flask(__name__)
 
-credentials = {'line_channel_access_token': None,
-               'line_channel_secret': None}
-
-for key in list(credentials.keys()):
-    env_var = os.getenv(key.upper(), None)
-    if not env_var:
-        raise ValueError('{} env. variable is not set.'.format(key.upper()))
-    else:
-        credentials[key] = env_var
-
-app.config['creds'] = credentials
+if app.env == 'production':
+    app.config.update(config.load_production())
+else:
+    app.config.update(config.load_default())
 
 import kkbox_line_bot.views

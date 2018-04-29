@@ -8,8 +8,8 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from linebot.models import TemplateSendMessage, ButtonsTemplate, URITemplateAction
 
-line_bot_api = LineBotApi(app.config['creds']['line_channel_access_token'])
-handler = WebhookHandler(app.config['creds']['line_channel_secret'])
+line_bot_api = LineBotApi(app.config['LINE_CHANNEL_ACCESS_TOKEN'])
+handler = WebhookHandler(app.config['LINE_CHANNEL_SECRET'])
 
 
 @app.route('/', methods=['GET'])
