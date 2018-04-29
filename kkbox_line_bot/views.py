@@ -1,15 +1,11 @@
 import logging
 
 from kkbox_line_bot import app
-from flask import request, abort
+from flask import request, abort, jsonify
 
-from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from linebot.models import TemplateSendMessage, ButtonsTemplate, URITemplateAction
+from kkbox_line_bot.line_message_handler import webhook_handler
 
-line_bot_api = LineBotApi(app.config['LINE_CHANNEL_ACCESS_TOKEN'])
-handler = WebhookHandler(app.config['LINE_CHANNEL_SECRET'])
+logger = logging.getLogger(__name__)
 
 
 @app.route('/', methods=['GET'])
@@ -19,42 +15,28 @@ def index():
 
 @app.route('/message', methods=['POST'])
 def message():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    logging.debug('Request body: ' + body)
+    try:
+        signature = request.headers['X-Line-Signature']
+        body = request.get_data(as_text=True)
+    except Exception as e:
+        msg = 'Invalid request: {}'.format(repr(e))
+        abort(400, msg)
 
     try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        abort(400)
+        webhook_handler.handle(body, signature)
+    except Exception as e:
+        msg = 'Line webhook handler error: {}'.format(repr(e))
+        logger.exception(msg)
+        abort(500, msg)
 
     return 'OK'
 
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    logging.debug('event: ' + str(event))
-    logging.debug('event.reply_token: ' + event.reply_token)
-    logging.debug('event.message.text: ' + event.message.text)
-    if event.message.text == 'template':
-        buttons_template_message = TemplateSendMessage(
-            alt_text='Buttons template',
-            template=ButtonsTemplate(
-                title='Menu',
-                text='Please select',
-                actions=[
-                    URITemplateAction(
-                        label='Open KKBOX',
-                        uri='https://event.kkbox.com/content/song/GlcNVyRZylVNH8isik'
-                    )
-                ]
-            )
-        )
-        logging.debug('template json obj: ' + str(buttons_template_message))
-        line_bot_api.reply_message(
-                event.reply_token,
-                buttons_template_message)
-    else:
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=event.message.text))
+@app.errorhandler(400)
+def bad_request_handler(e):
+    return jsonify({'msg': e.description}), 400
+
+
+@app.errorhandler(500)
+def internal_error_handler(e):
+    return jsonify({'msg': e.description}), 500
