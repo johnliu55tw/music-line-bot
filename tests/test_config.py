@@ -4,7 +4,7 @@ from unittest import mock
 from kkbox_line_bot import config
 
 
-class ConfigTestCase(unittest.TestCase):
+class GetEnvRaiseTestCase(unittest.TestCase):
 
     def setUp(self):
         pass
