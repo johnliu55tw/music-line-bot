@@ -24,7 +24,8 @@ def handle_text_message(event):
     olami_svc = olami.OlamiNliService(app.config['OLAMI_APP_KEY'],
                                       app.config['OLAMI_APP_SECRET'])
     try:
-        intent = olami.Intent.from_olami_result(olami_svc(event.message.text))
+        intents = [olami.Intent.from_olami_result(result)
+                   for result in olami_svc(event.message.text)]
     except Exception as e:
         logger.exception('Olami service error')
         msg = 'Olami service error: {}'.format(repr(e))
@@ -33,7 +34,8 @@ def handle_text_message(event):
             TextSendMessage(text=msg))
         return
 
-    logger.debug('Intent: {}'.format(repr(intent)))
+    logger.debug('All intents: {}'.format(repr(intents)))
+    intent = intents[0]
 
     if intent.action == 'play_song' and 'content' in intent.parameters:
         line_bot_api.reply_message(
