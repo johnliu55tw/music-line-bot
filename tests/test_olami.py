@@ -91,9 +91,23 @@ class OlamiNliServiceTestCase(unittest.TestCase):
     @mock.patch('kkbox_line_bot.olami.time')
     def test_call(self, m_time, m_requests):
         m_time.time.return_value = self.timestamp
+        m_requests.post.return_value.json.return_value = {'data': {'nli': 'NliResult'},
+                                                          'status': 'ok'}
 
         svc = olami.OlamiNliService(self.app_key, self.app_secret)
-        svc('TextForNli')
+        result = svc('TextForNli')
 
+        self.assertEqual(result, 'NliResult')
         m_requests.post.assert_called_with(olami.OlamiNliService.BASE_URL,
                                            params=svc._gen_parameters('TextForNli'))
+
+    @mock.patch('kkbox_line_bot.olami.requests')
+    @mock.patch('kkbox_line_bot.olami.time')
+    def test_call_nli_response_error(self, m_time, m_requests):
+        m_time.time.return_value = self.timestamp
+        m_requests.post.return_value.json.return_value = {'data': 'SomeData',
+                                                          'status': 'error'}
+
+        svc = olami.OlamiNliService(self.app_key, self.app_secret)
+        with self.assertRaisesRegex(olami.NliStatusError, r"NLI responded status != 'ok':.*"):
+            svc('TextForNli')

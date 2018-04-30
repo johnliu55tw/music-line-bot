@@ -5,6 +5,14 @@ from hashlib import md5
 import requests
 
 
+class Error(Exception):
+    """Base error"""
+
+
+class NliStatusError(Exception):
+    """The NLI result status is not 'ok'"""
+
+
 class OlamiNliService(object):
     BASE_URL = 'https://tw.olami.ai/cloudservice/api'
 
@@ -25,7 +33,12 @@ class OlamiNliService(object):
                              params=self._gen_parameters(text))
         resp.raise_for_status()
 
-        return resp.json()
+        resp_json = resp.json()
+        if resp_json['status'] != 'ok':
+            raise NliStatusError(
+                    "NLI responded status != 'ok': {}".format(resp_json['status']))
+        else:
+            return resp_json['data']['nli']
 
     def _gen_sign(self, api_parameter, timestamp=None):
         timestamp_ms = int(timestamp*1000) if timestamp else int(time.time()*1000)
