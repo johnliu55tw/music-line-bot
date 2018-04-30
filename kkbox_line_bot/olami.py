@@ -68,3 +68,30 @@ class OlamiNliService(object):
             params.update(cusid=self.cusid)
 
         return params
+
+
+class Intent(object):
+
+    def __init__(self, input, response, action, parameters):
+        self.input = input
+        self.response = response
+        self.action = action
+        self.parameters = parameters
+
+    def __repr__(self):
+        return ("<Intent object: input: '{}', "
+                "response: '{}', action: '{}', parameters: '{}'").format(
+                        self.input,
+                        self.response,
+                        self.action,
+                        self.parameters)
+
+    @classmethod
+    def from_olami_result(cls, olami_result):
+        # Take the first semantic object
+        input = olami_result['semantic'][0]['input']
+        response = olami_result['desc_obj'].get('result', '')
+        action = olami_result['semantic'][0]['modifier'][0]
+        parameters = {slot['name']: slot['value']
+                      for slot in olami_result['semantic'][0]['slots']}
+        return cls(input, response, action, parameters)
