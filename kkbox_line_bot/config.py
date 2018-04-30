@@ -12,9 +12,13 @@ def getenv_raise(key):
 
 def load_default():
     return {'LINE_CHANNEL_ACCESS_TOKEN': 'Line access token for testing',
-            'LINE_CHANNEL_SECRET': 'Line channel secret fro testing'}
+            'LINE_CHANNEL_SECRET': 'Line channel secret fro testing',
+            'OLAMI_APP_KEY': 'Olami service app key',
+            'OLAMI_APP_SECRET': 'Olami app secret'}
 
 
 def load_production():
     return {'LINE_CHANNEL_ACCESS_TOKEN': getenv_raise('LINE_CHANNEL_ACCESS_TOKEN'),
-            'LINE_CHANNEL_SECRET': getenv_raise('LINE_CHANNEL_SECRET')}
+            'LINE_CHANNEL_SECRET': getenv_raise('LINE_CHANNEL_SECRET'),
+            'OLAMI_APP_KEY': getenv_raise('OLAMI_APP_KEY'),
+            'OLAMI_APP_SECRET': getenv_raise('OLAMI_APP_SECRET')}

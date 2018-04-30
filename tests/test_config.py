@@ -40,16 +40,20 @@ class LoadProductionTestCase(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertIn('LINE_CHANNEL_ACCESS_TOKEN', result)
         self.assertIn('LINE_CHANNEL_SECRET', result)
+        self.assertIn('OLAMI_APP_KEY', result)
+        self.assertIn('OLAMI_APP_SECRET', result)
 
     @mock.patch('kkbox_line_bot.config.getenv_raise')
     def test_load_production(self, m_getenv_raise):
-        m_getenv_raise.side_effect = ['first_val', 'second_val']
+        m_getenv_raise.side_effect = ['first_val', 'second_val', 'third_val', 'forth_val']
 
         result = config.load_production()
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result['LINE_CHANNEL_ACCESS_TOKEN'], 'first_val')
         self.assertEqual(result['LINE_CHANNEL_SECRET'], 'second_val')
+        self.assertEqual(result['OLAMI_APP_KEY'], 'third_val')
+        self.assertEqual(result['OLAMI_APP_SECRET'], 'forth_val')
 
     @mock.patch('kkbox_line_bot.config.getenv_raise')
     def test_load_production_error(self, m_getenv_raise):
