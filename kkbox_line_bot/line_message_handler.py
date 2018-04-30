@@ -1,6 +1,8 @@
 import logging
+from pprint import pformat
 
 from kkbox_line_bot import app
+from kkbox_line_bot import olami
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
@@ -13,6 +15,26 @@ webhook_handler = WebhookHandler(app.config['LINE_CHANNEL_SECRET'])
 
 
 @webhook_handler.add(MessageEvent, message=TextMessage)
+def handle_text_message(event):
+    logger.debug('event: ' + str(event))
+    olami_svc = olami.OlamiNliService(app.config['OLAMI_APP_KEY'],
+                                      app.config['OLAMI_APP_SECRET'])
+    try:
+        nlp_result = olami_svc(event.message.text)
+    except Exception as e:
+        logger.exception('Olami service error')
+        msg = 'Olami service error: {}'.format(repr(e))
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=msg))
+    else:
+        line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(pformat(nlp_result)))
+
+
+# Test handler
+# @webhook_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     logger.debug('event: ' + str(event))
     logger.debug('event.reply_token: ' + event.reply_token)
