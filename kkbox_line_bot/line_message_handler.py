@@ -90,7 +90,7 @@ def create_column(obj, content_type):
     elif content_type == 'artist':
         return CarouselColumn(thumbnail_image_url=obj['images'][0]['url'],
                               title=obj['name'],
-                              text='',
+                              text='Singer',
                               actions=[URITemplateAction(label='Open in KKBOX',
                                                          uri=obj['url'])])
     elif content_type == 'playlist':
