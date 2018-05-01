@@ -74,7 +74,8 @@ def kkbox_search(token, search_type, keyword, limit=10):
 def create_carousel(objs, content_type, limit=10):
     columns = [create_column(obj, content_type) for obj in islice(objs, limit)]
     return TemplateSendMessage(alt_text='KKBOX result list',
-                               template=CarouselTemplate(columns))
+                               template=CarouselTemplate(columns,
+                                                         image_aspect_ratio='square'))
 
 
 def create_column(obj, content_type):
