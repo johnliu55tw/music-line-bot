@@ -1,27 +1,16 @@
 import unittest
 
-from kkbox_line_bot.nlp.intent import Intent
+from kkbox_line_bot.nlp import intent
 
 
-class IntentTestCase(unittest.TestCase):
+class MusicIntentTestCase(unittest.TestCase):
 
     def setUp(self):
         pass
 
-    def test_from_olami_result(self):
-        olami_service_response = [
-                {'desc_obj': {'status': 0},
-                 'semantic': [
-                     {'app': 'music',
-                      'customer': '5a97f2dfe4b02d92e8136091',
-                      'input': '播放七里香',
-                      'modifier': ['play_song'],
-                      'slots': [{'name': 'content', 'value': '七里香'}]}],
-                 'type': 'music'}]
-
-        intent = Intent.from_olami_result(olami_service_response[0])
-
-        self.assertEqual(intent.input, '播放七里香')
-        self.assertEqual(intent.response, '')
-        self.assertEqual(intent.action, 'play_song')
-        self.assertEqual(intent.parameters, {'content': '七里香'})
+    def test_init(self):
+        music_intent = intent.PlayMusicIntent('SomeInputText',
+                                              'SomeResponseText',
+                                              {'param1_name': 'param1_value',
+                                               'param2_name': 'param2_value'})
+        self.assertIsInstance(music_intent, intent.PlayMusicIntent)
