@@ -48,7 +48,10 @@ def handle_text_message(event):
                                      intent.parameters['type'],
                                      intent.parameters['keywords'])
         carousels = create_carousel(search_result, intent.parameters['type'])
-        line_bot_api.reply_message(event.reply_token, carousels)
+        try:
+            line_bot_api.reply_message(event.reply_token, carousels)
+        except Exception as e:
+            logging.error('Line reply error. Detail: {}'.format(e.error))
     else:
         line_bot_api.reply_message(event.reply_token,
                                    TextSendMessage('Unsupported intent: {}'.format(intent)))
