@@ -1,6 +1,5 @@
 import logging
 from itertools import islice
-from pprint import pformat
 
 
 from kkbox_line_bot import app
@@ -45,19 +44,20 @@ def handle_text_message(event):
     logger.debug('Got Intent: {}'.format(repr(intent)))
 
     if isinstance(intent, PlayMusicIntent):
-        line_bot_api.reply_message(
-                event.reply_token,
-                create_tracks_carousel(
-                    search_tracks(app.config['KKBOX_ACCESS_TOKEN'],
-                                  intent.parameters['type'],
-                                  intent.parameters['keywords'])))
+        search_result = kkbox_search(app.config['KKBOX_ACCESS_TOKEN'],
+                                     intent.parameters['type'],
+                                     intent.parameters['keywords'])
+        carousels = create_carousel(search_result, intent.parameters['type'])
+        line_bot_api.reply_message(event.reply_token, carousels)
     else:
-        line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(pformat(intent)))
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage('Unsupported intent: {}'.format(intent)))
 
 
-def search_tracks(token, search_type, keyword, limit=10):
+def kkbox_search(token, search_type, keyword, limit=10):
+    if search_type not in ('track', 'album', 'artist', 'playlist'):
+        raise ValueError('Invalid search_type: {}'.format(search_type))
+
     resp = requests.get('https://api.kkbox.com/v1.1/search',
                         headers={'Authorization': 'Bearer ' + token},
                         params={'territory': 'TW',
@@ -65,24 +65,37 @@ def search_tracks(token, search_type, keyword, limit=10):
                                 'limit': limit,
                                 'q': keyword})
     resp.raise_for_status()
-    return resp.json()['tracks']['data']
+    return resp.json()[search_type + 's']['data']
 
 
-def create_tracks_carousel(tracks, limit=10):
-    columns = list()
-    for track in islice(tracks, limit):
-        artist_name = track['album']['artist']['name']
-        track_name = track['name']
-        image_url = track['album']['images'][0]['url']
-        event_url = track['url']
-
-        column = CarouselColumn(thumbnail_image_url=image_url,
-                                title=track_name,
-                                text=artist_name,
-                                actions=[URITemplateAction(label='Open in KKBOX',
-                                                           uri=event_url)])
-
-        columns.append(column)
-
-    return TemplateSendMessage(alt_text='Tracks list',
+def create_carousel(objs, content_type, limit=10):
+    columns = [create_column(obj, content_type) for obj in islice(objs, limit)]
+    return TemplateSendMessage(alt_text='KKBOX result list',
                                template=CarouselTemplate(columns))
+
+
+def create_column(obj, content_type):
+    if content_type == 'track':
+        return CarouselColumn(thumbnail_image_url=obj['album']['images'][0]['url'],
+                              title=obj['name'],
+                              text=obj['album']['artist']['name'],
+                              actions=[URITemplateAction(label='Open in KKBOX',
+                                                         uri=obj['url'])])
+    elif content_type == 'album':
+        return CarouselColumn(thumbnail_image_url=obj['images'][0]['url'],
+                              title=obj['name'],
+                              text=obj['artist']['name'],
+                              actions=[URITemplateAction(label='Open in KKBOX',
+                                                         uri=obj['url'])])
+    elif content_type == 'artist':
+        return CarouselColumn(thumbnail_image_url=obj['images'][0]['url'],
+                              title=obj['name'],
+                              text='',
+                              actions=[URITemplateAction(label='Open in KKBOX',
+                                                         uri=obj['url'])])
+    elif content_type == 'playlist':
+        return CarouselColumn(thumbnail_image_url=obj['images'][0]['url'],
+                              title=obj['title'],
+                              text=obj['owner']['name'],
+                              actions=[URITemplateAction(label='Open in KKBOX',
+                                                         uri=obj['url'])])
