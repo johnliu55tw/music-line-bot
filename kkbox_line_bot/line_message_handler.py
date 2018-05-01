@@ -79,27 +79,33 @@ def create_carousel(objs, content_type, limit=10):
 
 
 def create_column(obj, content_type):
+    def reduce_string_length(s, size):
+        return s[:size-1] + '…' if len(s) > size else s
+
     if content_type == 'track':
-        return CarouselColumn(thumbnail_image_url=obj['album']['images'][0]['url'],
-                              title=obj['name'],
-                              text=obj['album']['artist']['name'],
-                              actions=[URITemplateAction(label='Open in KKBOX',
-                                                         uri=obj['url'])])
+        image_url = obj['album']['images'][0]['url']
+        title = obj['name']
+        text = obj['album']['artist']['name']
+        actions = [URITemplateAction(label='Open in KKBOX', uri=obj['url'])]
+
     elif content_type == 'album':
-        return CarouselColumn(thumbnail_image_url=obj['images'][0]['url'],
-                              title=obj['name'],
-                              text=obj['artist']['name'],
-                              actions=[URITemplateAction(label='Open in KKBOX',
-                                                         uri=obj['url'])])
+        image_url = obj['images'][0]['url']
+        title = obj['name']
+        text = obj['artist']['name']
+        actions = [URITemplateAction(label='Open in KKBOX', uri=obj['url'])]
+
     elif content_type == 'artist':
-        return CarouselColumn(thumbnail_image_url=obj['images'][0]['url'],
-                              title=obj['name'],
-                              text='Singer',
-                              actions=[URITemplateAction(label='Open in KKBOX',
-                                                         uri=obj['url'])])
+        image_url = obj['images'][0]['url']
+        title = obj['name']
+        text = 'Singer'
+        actions = [URITemplateAction(label='Open in KKBOX', uri=obj['url'])]
     elif content_type == 'playlist':
-        return CarouselColumn(thumbnail_image_url=obj['images'][0]['url'],
-                              title=obj['title'],
-                              text=obj['owner']['name'],
-                              actions=[URITemplateAction(label='Open in KKBOX',
-                                                         uri=obj['url'])])
+        image_url = obj['images'][0]['url']
+        title = obj['title']
+        text = obj['owner']['name']
+        actions = [URITemplateAction(label='Open in KKBOX', uri=obj['url'])]
+    # The length of title and text is limited by the Line Message API
+    return CarouselColumn(thumbnail_image_url=image_url,
+                          title=reduce_string_length(title, 40),
+                          text=reduce_string_length(text, 60),
+                          actions=actions)
