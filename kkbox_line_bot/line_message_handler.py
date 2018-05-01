@@ -4,7 +4,9 @@ from pprint import pformat
 
 
 from kkbox_line_bot import app
-from kkbox_line_bot import olami
+from kkbox_line_bot.nlp import olami
+from kkbox_line_bot.nlp import Error as NlpError
+from kkbox_line_bot.nlp.intent import PlayMusicIntent
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
@@ -21,39 +23,45 @@ webhook_handler = WebhookHandler(app.config['LINE_CHANNEL_SECRET'])
 @webhook_handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
     logger.debug('event: ' + str(event))
-    olami_svc = olami.OlamiNliService(app.config['OLAMI_APP_KEY'],
-                                      app.config['OLAMI_APP_SECRET'])
+    olami_svc = olami.OlamiService(app.config['OLAMI_APP_KEY'],
+                                   app.config['OLAMI_APP_SECRET'])
     try:
-        intents = [olami.Intent.from_olami_result(result)
-                   for result in olami_svc(event.message.text)]
+        intent = olami.intent_from_response(olami_svc(event.message.text))
+    except NlpError as e:
+        msg = 'NLP service error: {}'.format(repr(e))
+        logger.error(msg)
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=msg))
+        return
     except Exception as e:
-        logger.exception('Olami service error')
-        msg = 'Olami service error: {}'.format(repr(e))
+        logger.exception('Unexpected error')
+        msg = 'Unexpected error: {}'.format(repr(e))
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=msg))
         return
 
-    logger.debug('All intents: {}'.format(repr(intents)))
-    intent = intents[0]
+    logger.debug('Got Intent: {}'.format(repr(intent)))
 
-    if intent.action == 'play_song' and 'content' in intent.parameters:
+    if isinstance(intent, PlayMusicIntent):
         line_bot_api.reply_message(
                 event.reply_token,
                 create_tracks_carousel(
                     search_tracks(app.config['KKBOX_ACCESS_TOKEN'],
-                                  intent.parameters['content'])))
+                                  intent.parameters['type'],
+                                  intent.parameters['keywords'])))
     else:
         line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(pformat(intent)))
 
 
-def search_tracks(token, keyword, limit=10):
+def search_tracks(token, search_type, keyword, limit=10):
     resp = requests.get('https://api.kkbox.com/v1.1/search',
                         headers={'Authorization': 'Bearer ' + token},
                         params={'territory': 'TW',
-                                'type': ['track'],
+                                'type': [search_type],
                                 'limit': limit,
                                 'q': keyword})
     resp.raise_for_status()
