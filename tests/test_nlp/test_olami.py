@@ -3,6 +3,7 @@ from unittest import mock
 import json
 
 from kkbox_line_bot.nlp import olami
+from kkbox_line_bot.nlp import intent
 
 
 class OlamiServiceTestCase(unittest.TestCase):
@@ -111,3 +112,37 @@ class OlamiServiceTestCase(unittest.TestCase):
         svc = olami.OlamiService(self.app_key, self.app_secret)
         with self.assertRaisesRegex(olami.NliStatusError, r"NLI responded status != 'ok':.*"):
             svc('TextForNli')
+
+
+class IntentFromOlamiResponseTestCase(unittest.TestCase):
+
+    def test_intent_from_response(self):
+        olami_service_response = [
+                        {'desc_obj': {'status': 0},
+                         'semantic': [
+                             {'app': 'music',
+                              'customer': '5a97f2dfe4b02d92e8136091',
+                              'input': '播放七里香',
+                              'modifier': ['play_song'],
+                              'slots': [{'name': 'content', 'value': '七里香'}]}],
+                         'type': 'music'}]
+        result_intent = olami.intent_from_response(olami_service_response)
+
+        self.assertIsInstance(result_intent, intent.PlayMusicIntent)
+        self.assertEqual(result_intent.input, '播放七里香')
+        self.assertEqual(result_intent.response, '')
+        self.assertEqual(result_intent.parameters,
+                         {'type': 'track', 'keywords': ['七里香']})
+
+    def test_intent_from_response_invalid(self):
+        olami_service_response = [
+                        {'desc_obj': {'status': 1},
+                         'semantic': [
+                             {'app': 'music',
+                              'customer': '5a97f2dfe4b02d92e8136091',
+                              'input': '播放七里香',
+                              'modifier': ['play_song'],
+                              'slots': [{'name': 'content', 'value': '七里香'}]}],
+                         'type': 'music'}]
+        with self.assertRaises(olami.InvalidIntent):
+            olami.intent_from_response(olami_service_response)

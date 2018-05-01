@@ -1,14 +1,64 @@
 import time
 import json
+import logging
 from hashlib import md5
 
 from .error import Error
+from .intent import PlayMusicIntent
 
 import requests
 
 
+logger = logging.getLogger(__name__)
+
+
 class NliStatusError(Error):
     """The NLI result status is not 'ok'"""
+
+
+class InvalidIntent(Error):
+    """The resulting intent is invalid"""
+
+
+def intent_from_response(resp):
+    def get_response(match_result):
+        return match_result['desc_obj'].get('result', '')
+
+    def get_input(match_result):
+        return match_result['semantic'][0]['input']
+
+    def get_parameters(match_result):
+        first_semantic = match_result['semantic'][0]
+        first_modifier = first_semantic['modifier'][0]
+        slots = first_semantic['slots']
+        slots_dict = {slot['name']: slot['value'] for slot in slots}
+
+        if 'album_or_singer_album' in slots_dict or\
+           'album' in slots_dict or\
+           'name_or_album' in slots_dict or\
+           first_modifier == 'play_album':
+            return {'type': 'album', 'keywords': list(slots_dict.values())}
+
+        elif 'singer' in slots_dict:
+            return {'type': 'artist', 'keywords': list(slots_dict.values())}
+
+        elif first_modifier == 'play_theme':
+            return {'type': 'playlist', 'keywords': list(slots_dict.values())}
+
+        elif first_modifier == 'play_song':
+            return {'type': 'track', 'keywords': list(slots_dict.values())}
+        else:
+            raise ValueError('Unable to get parameters from {}'.format(match_result))
+
+    first_match = resp[0]
+    first_match_status = first_match['desc_obj']['status']
+    if first_match_status == 0:
+        return PlayMusicIntent(get_input(first_match),
+                               get_response(first_match),
+                               get_parameters(first_match))
+    else:
+
+        raise InvalidIntent('First match status != 0: {}'.format(first_match_status))
 
 
 class OlamiService(object):
