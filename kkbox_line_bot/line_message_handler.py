@@ -47,7 +47,7 @@ def handle_text_message(event):
                                   intent.parameters['keywords'],
                                   types=intent.parameters['type'],
                                   limit=10)
-        result_data = result_obj[intent.parameters['type']+'s']
+        result_data = result_obj[intent.parameters['type']+'s']['data']
         carousels = create_carousel(result_data, intent.parameters['type'])
         try:
             line_bot_api.reply_message(event.reply_token, carousels)
