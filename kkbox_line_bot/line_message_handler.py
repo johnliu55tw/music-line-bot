@@ -6,12 +6,11 @@ from kkbox_line_bot import app
 from kkbox_line_bot.nlp import olami
 from kkbox_line_bot.nlp import Error as NlpError
 from kkbox_line_bot.nlp.intent import PlayMusicIntent
+from kkbox_line_bot import kkbox
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from linebot.models import TemplateSendMessage, CarouselTemplate, CarouselColumn, URITemplateAction
-
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +43,12 @@ def handle_text_message(event):
     logger.debug('Got Intent: {}'.format(repr(intent)))
 
     if isinstance(intent, PlayMusicIntent):
-        search_result = kkbox_search(app.config['KKBOX_ACCESS_TOKEN'],
-                                     intent.parameters['type'],
-                                     intent.parameters['keywords'])
-        carousels = create_carousel(search_result, intent.parameters['type'])
+        result_obj = kkbox.search(app.config['KKBOX_ACCESS_TOKEN'],
+                                  intent.parameters['keywords'],
+                                  types=intent.parameters['type'],
+                                  limit=10)
+        result_data = result_obj[intent.parameters['type']+'s']
+        carousels = create_carousel(result_data, intent.parameters['type'])
         try:
             line_bot_api.reply_message(event.reply_token, carousels)
         except Exception as e:
@@ -55,20 +56,6 @@ def handle_text_message(event):
     else:
         line_bot_api.reply_message(event.reply_token,
                                    TextSendMessage('Unsupported intent: {}'.format(intent)))
-
-
-def kkbox_search(token, search_type, keyword, limit=10):
-    if search_type not in ('track', 'album', 'artist', 'playlist'):
-        raise ValueError('Invalid search_type: {}'.format(search_type))
-
-    resp = requests.get('https://api.kkbox.com/v1.1/search',
-                        headers={'Authorization': 'Bearer ' + token},
-                        params={'territory': 'TW',
-                                'type': [search_type],
-                                'limit': limit,
-                                'q': keyword})
-    resp.raise_for_status()
-    return resp.json()[search_type + 's']['data']
 
 
 def create_carousel(objs, content_type, limit=10):
