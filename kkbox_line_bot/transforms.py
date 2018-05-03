@@ -37,7 +37,7 @@ def _(intent):
     except kkbox.EmptySearchResult:
         return TextSendMessage('KKBOX上找不到您要的資訊耶…要不要試試別的說法呢?')
     else:
-        return kkbox_search_to_line_messages(search_result)
+        return list(kkbox_search_to_line_messages(search_result).values())
 
 
 def kkbox_search_to_line_messages(search_result):

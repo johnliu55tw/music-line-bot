@@ -285,9 +285,8 @@ class IntentToLineMessagesTestCase(unittest.TestCase):
                 parameters={'keywords': ['kw1', 'kw2'],
                             'type': 'track'})
 
-        result = transforms.intent_to_line_messages(play_music_intent)
+        transforms.intent_to_line_messages(play_music_intent)
 
-        self.assertEqual(result, m_kkbox_to_line.return_value)
         m_kkbox_search.assert_called_with(app.config['KKBOX_ACCESS_TOKEN'],
                                           'kw1 kw2',
                                           types='track',
