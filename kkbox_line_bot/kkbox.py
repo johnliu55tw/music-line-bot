@@ -8,6 +8,10 @@ class Error(Exception):
     """Base Error"""
 
 
+class EmptySearchResult(Error):
+    """Raised if no result for searching."""
+
+
 def search(token, keyword,
            territory='TW', types=None, limit=None, offset=None):
 
@@ -29,5 +33,7 @@ def search(token, keyword,
 
     if resp.status_code != 200:
         raise Error(resp.json())
+    if resp.json()['summary']['total'] == 0:
+        raise EmptySearchResult(keyword)
     else:
         return resp.json()
