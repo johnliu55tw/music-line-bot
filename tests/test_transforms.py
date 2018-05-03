@@ -1,9 +1,13 @@
 import unittest
+from unittest import mock
 import json
 
-from linebot.models import CarouselColumn, TemplateSendMessage
+from linebot.models import CarouselColumn, TemplateSendMessage, TextSendMessage
 
+from kkbox_line_bot import app
 from kkbox_line_bot import transforms
+from kkbox_line_bot.nlp import intent
+from kkbox_line_bot import kkbox
 
 TRACK_OBJ_JSON_STRING = """
 {"album": {"artist": {"id": "5aIlrhCxN9BcJ3RyUw",
@@ -249,3 +253,59 @@ class CreateColumnTestCase(unittest.TestCase):
 
         self.assertEqual(len(result.title), 40)
         self.assertEqual(len(result.text), 60)
+
+
+class IntentToLineMessagesTestCase(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_unsupported_intent(self):
+        class SomeWeirdIntent(intent.Intent):
+
+            def __init__(self, *args, **kwargs):
+
+                super().__init__(*args, **kwargs)
+        some_weird_intent = SomeWeirdIntent(input='SomeInput',
+                                            response='SomeResponse',
+                                            parameters={'SomeKey': 'SomeValue'})
+
+        with self.assertRaisesRegex(transforms.UnsupportedIntent, r'SomeWeirdIntent'):
+            transforms.intent_to_line_messages(some_weird_intent)
+
+    @mock.patch('kkbox_line_bot.transforms.kkbox.search')
+    @mock.patch('kkbox_line_bot.transforms.kkbox_search_to_line_messages')
+    def test_play_music_intent(self, m_kkbox_to_line, m_kkbox_search):
+        play_music_intent = intent.PlayMusicIntent(
+                input='PlayMusicIntentInput',
+                response='ResponseToUser',
+                parameters={'keywords': ['kw1', 'kw2'],
+                            'type': 'track'})
+
+        result = transforms.intent_to_line_messages(play_music_intent)
+
+        self.assertEqual(result, m_kkbox_to_line.return_value)
+        m_kkbox_search.assert_called_with(app.config['KKBOX_ACCESS_TOKEN'],
+                                          'kw1 kw2',
+                                          types='track',
+                                          limit=10)
+        m_kkbox_to_line.assert_called_with(m_kkbox_search.return_value)
+
+    @mock.patch('kkbox_line_bot.transforms.kkbox.search')
+    @mock.patch('kkbox_line_bot.transforms.kkbox_search_to_line_messages')
+    def test_play_music_intent_empty_kkbox_result(self, m_kkbox_to_line, m_kkbox_search):
+        m_kkbox_search.side_effect = kkbox.EmptySearchResult('NotResultKeyword')
+        play_music_intent = intent.PlayMusicIntent(
+                input='PlayMusicIntentInput',
+                response='ResponseToUser',
+                parameters={'keywords': ['kw1', 'kw2'],
+                            'type': 'track'})
+
+        result = transforms.intent_to_line_messages(play_music_intent)
+
+        self.assertIsInstance(result, TextSendMessage)
+        self.assertEqual(result.text,
+                         'KKBOX上找不到您要的資訊耶…要不要試試別的說法呢?')

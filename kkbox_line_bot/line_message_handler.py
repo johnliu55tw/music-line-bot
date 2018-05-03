@@ -4,8 +4,6 @@ import logging
 from kkbox_line_bot import app
 from kkbox_line_bot.nlp import olami
 from kkbox_line_bot.nlp import Error as NlpError
-from kkbox_line_bot.nlp.intent import PlayMusicIntent
-from kkbox_line_bot import kkbox
 from kkbox_line_bot import transforms
 
 from linebot import LineBotApi, WebhookHandler
@@ -40,20 +38,14 @@ def handle_text_message(event):
         return
 
     logger.debug('Got Intent: {}'.format(repr(intent)))
-
-    if isinstance(intent, PlayMusicIntent):
-        search_result = kkbox.search(app.config['KKBOX_ACCESS_TOKEN'],
-                                     intent.parameters['keywords'],
-                                     types=intent.parameters['type'],
-                                     limit=10)
-        messages = transforms.kkbox_search_to_line_messages(search_result)
-        logger.debug('Line messages type: {}'.format(list(messages.keys())))
-
-        try:
-            line_bot_api.reply_message(event.reply_token,
-                                       list(messages.values()))
-        except Exception as e:
-            logging.error('Line reply error. Detail: {}'.format(e.error))
-    else:
-        line_bot_api.reply_message(event.reply_token,
-                                   TextSendMessage('Unsupported intent: {}'.format(intent)))
+    try:
+        reply_messages = transforms.intent_to_line_messages(intent)
+    except transforms.UnsupportedIntent as e:
+        reply_messages = TextSendMessage('Unsupported intent: {}'.format(e))
+    except Exception as e:
+        msg = 'Unable to transform intent to line messages: {}'.format(str(e))
+        logger.error(msg)
+        reply_messages = TextSendMessage(msg)
+    finally:
+        logger.info('Reply: {}'.format(reply_messages))
+        line_bot_api.reply_message(event.reply_token, reply_messages)

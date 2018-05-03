@@ -1,9 +1,43 @@
 from itertools import islice
+from functools import singledispatch
+
 from linebot.models import (
         TemplateSendMessage,
         CarouselTemplate,
         CarouselColumn,
-        URITemplateAction)
+        URITemplateAction,
+        TextSendMessage)
+
+from kkbox_line_bot.nlp.intent import PlayMusicIntent
+from kkbox_line_bot import kkbox
+from kkbox_line_bot import app
+
+
+class Error(Exception):
+    """Base error"""
+
+
+class UnsupportedIntent(Error):
+    """Intent is not supported"""
+
+
+@singledispatch
+def intent_to_line_messages(intent):
+    raise UnsupportedIntent(intent.__class__.__name__)
+
+
+@intent_to_line_messages.register(PlayMusicIntent)
+def _(intent):
+    spaced_keywords = ' '.join(intent.parameters['keywords'])
+    try:
+        search_result = kkbox.search(app.config['KKBOX_ACCESS_TOKEN'],
+                                     spaced_keywords,
+                                     types=intent.parameters['type'],
+                                     limit=10)
+    except kkbox.EmptySearchResult:
+        return TextSendMessage('KKBOX上找不到您要的資訊耶…要不要試試別的說法呢?')
+    else:
+        return kkbox_search_to_line_messages(search_result)
 
 
 def kkbox_search_to_line_messages(search_result):
