@@ -1,9 +1,11 @@
 import unittest
 from unittest import mock
+from random import randint
 import json
 
 from kkbox_line_bot.nlp import olami
 from kkbox_line_bot.nlp import intent
+from kkbox_line_bot.nlp.error import NlpFailed
 
 
 class OlamiServiceTestCase(unittest.TestCase):
@@ -135,8 +137,9 @@ class IntentFromOlamiResponseTestCase(unittest.TestCase):
                          {'type': 'track', 'keywords': ['七里香']})
 
     def test_intent_from_response_invalid(self):
+        some_status_code = randint(1, 1000)
         olami_service_response = [
-                        {'desc_obj': {'status': 1},
+                        {'desc_obj': {'status': some_status_code},
                          'semantic': [
                              {'app': 'music',
                               'customer': '5a97f2dfe4b02d92e8136091',
@@ -144,9 +147,9 @@ class IntentFromOlamiResponseTestCase(unittest.TestCase):
                               'modifier': ['play_song'],
                               'slots': [{'name': 'content', 'value': '七里香'}]}],
                          'type': 'music'}]
-        with self.assertRaises(olami.InvalidIntent) as cm:
+        with self.assertRaises(NlpFailed) as cm:
             olami.intent_from_response(olami_service_response)
-        self.assertEqual(cm.exception.status, 1)
+        self.assertEqual(cm.exception.status_code, some_status_code)
         self.assertEqual(cm.exception.response, 'Empty response!')
 
     def test_intent_from_response_invalid_status_1003(self):
@@ -160,7 +163,7 @@ class IntentFromOlamiResponseTestCase(unittest.TestCase):
                               'modifier': ['play_song'],
                               'slots': [{'name': 'content', 'value': '七里香'}]}],
                          'type': 'music'}]
-        with self.assertRaises(olami.InvalidIntent) as cm:
+        with self.assertRaises(NlpFailed) as cm:
             olami.intent_from_response(olami_service_response)
-        self.assertEqual(cm.exception.status, 1003)
+        self.assertEqual(cm.exception.status_code, 1003)
         self.assertEqual(cm.exception.response, 'Result string of status 1003')

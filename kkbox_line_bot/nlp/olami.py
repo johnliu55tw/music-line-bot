@@ -3,7 +3,7 @@ import json
 import logging
 from hashlib import md5
 
-from .error import Error
+from .error import Error, NlpFailed
 from .intent import PlayMusicIntent
 
 import requests
@@ -14,13 +14,6 @@ logger = logging.getLogger(__name__)
 
 class NliStatusError(Error):
     """The NLI result status is not 'ok'"""
-
-
-class InvalidIntent(Error):
-    """The resulting intent is invalid"""
-    def __init__(self, status, response):
-        self.status = status
-        self.response = response
 
 
 def intent_from_response(resp):
@@ -62,8 +55,8 @@ def intent_from_response(resp):
                                get_response(first_match),
                                get_parameters(first_match))
     else:
-        raise InvalidIntent(get_status(first_match),
-                            get_response(first_match, default='Empty response!'))
+        raise NlpFailed(get_status(first_match),
+                        get_response(first_match, default='Empty response!'))
 
 
 class OlamiService(object):
