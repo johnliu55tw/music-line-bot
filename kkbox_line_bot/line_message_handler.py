@@ -3,7 +3,7 @@ import logging
 
 from kkbox_line_bot import app
 from kkbox_line_bot.nlp import olami
-from kkbox_line_bot.nlp import Error as NlpError
+from kkbox_line_bot.nlp.error import NlpFailed
 from kkbox_line_bot import transforms
 
 from linebot import LineBotApi, WebhookHandler
@@ -22,12 +22,12 @@ def handle_text_message(event):
                                    app.config['OLAMI_APP_SECRET'])
     try:
         intent = olami.intent_from_response(olami_svc(event.message.text))
-    except NlpError as e:
-        msg = 'NLP service error: {}'.format(repr(e))
+    except NlpFailed as e:
+        msg = 'NLP service failed to deduce intent: {}'.format(repr(NlpFailed))
         logger.error(msg)
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text=msg))
+            TextSendMessage(text=e.response))
         return
     except Exception as e:
         logger.exception('Unexpected error')
