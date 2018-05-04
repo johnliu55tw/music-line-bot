@@ -144,5 +144,23 @@ class IntentFromOlamiResponseTestCase(unittest.TestCase):
                               'modifier': ['play_song'],
                               'slots': [{'name': 'content', 'value': '七里香'}]}],
                          'type': 'music'}]
-        with self.assertRaises(olami.InvalidIntent):
+        with self.assertRaises(olami.InvalidIntent) as cm:
             olami.intent_from_response(olami_service_response)
+        self.assertEqual(cm.exception.status, 1)
+        self.assertEqual(cm.exception.response, 'Empty response!')
+
+    def test_intent_from_response_invalid_status_1003(self):
+        olami_service_response = [
+                        {'desc_obj': {'status': 1003,
+                                      'result': 'Result string of status 1003'},
+                         'semantic': [
+                             {'app': 'music',
+                              'customer': '5a97f2dfe4b02d92e8136091',
+                              'input': '播放七里香',
+                              'modifier': ['play_song'],
+                              'slots': [{'name': 'content', 'value': '七里香'}]}],
+                         'type': 'music'}]
+        with self.assertRaises(olami.InvalidIntent) as cm:
+            olami.intent_from_response(olami_service_response)
+        self.assertEqual(cm.exception.status, 1003)
+        self.assertEqual(cm.exception.response, 'Result string of status 1003')

@@ -18,11 +18,17 @@ class NliStatusError(Error):
 
 class InvalidIntent(Error):
     """The resulting intent is invalid"""
+    def __init__(self, status, response):
+        self.status = status
+        self.response = response
 
 
 def intent_from_response(resp):
-    def get_response(match_result):
-        return match_result['desc_obj'].get('result', '')
+    def get_status(match_result):
+        return match_result['desc_obj']['status']
+
+    def get_response(match_result, default=''):
+        return match_result['desc_obj'].get('result', default)
 
     def get_input(match_result):
         return match_result['semantic'][0]['input']
@@ -51,14 +57,13 @@ def intent_from_response(resp):
             raise ValueError('Unable to get parameters from {}'.format(match_result))
 
     first_match = resp[0]
-    first_match_status = first_match['desc_obj']['status']
-    if first_match_status == 0:
+    if get_status(first_match) == 0:
         return PlayMusicIntent(get_input(first_match),
                                get_response(first_match),
                                get_parameters(first_match))
     else:
-
-        raise InvalidIntent('First match status != 0: {}'.format(first_match_status))
+        raise InvalidIntent(get_status(first_match),
+                            get_response(first_match, default='Empty response!'))
 
 
 class OlamiService(object):
