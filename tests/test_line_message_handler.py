@@ -100,3 +100,26 @@ class WebhookHandlerTestCase(unittest.TestCase):
         m_line_bot_api.reply_message.assert_called_with(
                 self.reply_token,
                 TextSendMessage('TheResponseToUser'))
+
+    @mock.patch('kkbox_line_bot.line_message_handler.line_bot_api')
+    @mock.patch('kkbox_line_bot.line_message_handler.transforms')
+    @mock.patch('kkbox_line_bot.line_message_handler.olami')
+    def test_intent_unsupported(self, m_olami, m_transforms, m_line_bot_api):
+        text_msg_event = build_line_webhook_text_message_event(
+                self.reply_token,
+                self.user_id,
+                self.msg_id,
+                'TestWebhookMessage',
+                self.timestamp)
+        webhook_body = build_webhook_body(text_msg_event)
+        webhook_signature = gen_signature(
+                app.config['LINE_CHANNEL_SECRET'].encode('utf-8'),
+                webhook_body)
+        m_olami.intent_from_response.side_effect = NlpFailed(999, 'TheResponseToUser')
+
+        line_message_handler.webhook_handler.handle(body=webhook_body,
+                                                    signature=webhook_signature)
+
+        m_line_bot_api.reply_message.assert_called_with(
+                self.reply_token,
+                TextSendMessage('TheResponseToUser'))
