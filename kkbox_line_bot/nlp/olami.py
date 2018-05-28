@@ -3,60 +3,13 @@ import json
 import logging
 from hashlib import md5
 
-from .error import Error, NlpFailed
-from .intent import PlayMusicIntent
+from .error import NlpServiceError
+from . import response
 
 import requests
 
 
 logger = logging.getLogger(__name__)
-
-
-class NliStatusError(Error):
-    """The NLI result status is not 'ok'"""
-
-
-def intent_from_response(resp):
-    def get_status(match_result):
-        return match_result['desc_obj']['status']
-
-    def get_response(match_result, default=''):
-        return match_result['desc_obj'].get('result', default)
-
-    def get_input(match_result):
-        return match_result['semantic'][0]['input']
-
-    def get_parameters(match_result):
-        first_semantic = match_result['semantic'][0]
-        first_modifier = first_semantic['modifier'][0]
-        slots = first_semantic['slots']
-        slots_dict = {slot['name']: slot['value'] for slot in slots}
-
-        if 'album_or_singer_album' in slots_dict or\
-           'album' in slots_dict or\
-           'name_or_album' in slots_dict or\
-           first_modifier == 'play_album':
-            return {'type': 'album', 'keywords': list(slots_dict.values())}
-
-        elif 'singer' in slots_dict:
-            return {'type': 'artist', 'keywords': list(slots_dict.values())}
-
-        elif first_modifier == 'play_theme':
-            return {'type': 'playlist', 'keywords': list(slots_dict.values())}
-
-        elif first_modifier == 'play_song':
-            return {'type': 'track', 'keywords': list(slots_dict.values())}
-        else:
-            raise ValueError('Unable to get parameters from {}'.format(match_result))
-
-    first_match = resp[0]
-    if get_status(first_match) == 0:
-        return PlayMusicIntent(get_input(first_match),
-                               get_response(first_match),
-                               get_parameters(first_match))
-    else:
-        raise NlpFailed(get_status(first_match),
-                        get_response(first_match, default='Empty response!'))
 
 
 class OlamiService(object):
@@ -75,13 +28,19 @@ class OlamiService(object):
         self.nli_config = nli_config
 
     def __call__(self, text):
+        return response_factory(self._make_request(text))
+
+    def _make_request(self, text):
         resp = requests.post(self.BASE_URL,
                              params=self._gen_parameters(text))
-        resp.raise_for_status()
+        # HTTP Response code != 200: Service Error!
+        if resp.status_code != 200:
+            raise NlpServiceError('HTTP Response != 200: {}'.format(resp.status_code))
 
         resp_json = resp.json()
+        # The outermost status value
         if resp_json['status'] != 'ok':
-            raise NliStatusError(
+            raise NlpServiceError(
                     "NLI responded status != 'ok': {}".format(resp_json['status']))
         else:
             return resp_json['data']['nli']
@@ -114,3 +73,19 @@ class OlamiService(object):
             params.update(cusid=self.cusid)
 
         return params
+
+
+def response_factory(olami_resp):
+    """Simple factory function creates a response.*Response class from OLAMI response."""
+    first_match = olami_resp[0]
+
+    if first_match['type'] == 'ds':
+        return response.ErrorResponse(response_text=first_match['desc_obj']['result'],
+                                      status_code=first_match['desc_obj']['status'])
+
+    elif first_match['type'] == 'kkbox':
+        return response.KKBOXResponse(response_text=first_match['desc_obj']['result'],
+                                      data_obj=first_match['data_obj'])
+
+    else:
+        return response.NotImplementedResponse(type=first_match['type'])

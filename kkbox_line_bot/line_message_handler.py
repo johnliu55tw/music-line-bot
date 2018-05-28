@@ -3,8 +3,7 @@ import logging
 
 from kkbox_line_bot import app
 from kkbox_line_bot.nlp import olami
-from kkbox_line_bot.nlp.error import NlpFailed
-from kkbox_line_bot import transforms
+from kkbox_line_bot.nlp.error import NlpServiceError
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
@@ -21,31 +20,16 @@ def handle_text_message(event):
     olami_svc = olami.OlamiService(app.config['OLAMI_APP_KEY'],
                                    app.config['OLAMI_APP_SECRET'])
     try:
-        intent = olami.intent_from_response(olami_svc(event.message.text))
-    except NlpFailed as e:
-        msg = 'NLP service failed to deduce intent: {}'.format(repr(NlpFailed))
-        logger.error(msg)
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=e.response))
-        return
+        resp = olami_svc(event.message.text)
+        reply = resp.as_line_messages()
+    except NlpServiceError as e:
+        err_msg = 'NLP service is currently unavailable: {}'.format(repr(e))
+        logger.error(err_msg)
+        reply = TextSendMessage(text=err_msg)
     except Exception as e:
-        logger.exception('Unexpected error')
-        msg = 'Unexpected error: {}'.format(repr(e))
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=msg))
-        return
-
-    logger.debug('Got Intent: {}'.format(repr(intent)))
-    try:
-        reply_messages = transforms.intent_to_line_messages(intent)
-    except transforms.UnsupportedIntent as e:
-        reply_messages = TextSendMessage('Unsupported intent: {}'.format(e))
-    except Exception as e:
-        msg = 'Unable to transform intent to line messages: {}'.format(str(e))
-        logger.error(msg)
-        reply_messages = TextSendMessage(msg)
+        err_msg = 'Unexpected error: {}'.format(repr(e))
+        logger.exception(err_msg)
+        reply = TextSendMessage(text=err_msg)
     finally:
-        logger.info('Reply: {}'.format(reply_messages))
-        line_bot_api.reply_message(event.reply_token, reply_messages)
+        logger.info('Reply: {}'.format(reply))
+        line_bot_api.reply_message(event.reply_token, reply)
