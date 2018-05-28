@@ -49,10 +49,14 @@ class KKBOXResponse(object):
                 reprlib.repr(self.data_obj))
 
     def as_line_messages(self):
-        return [TextSendMessage(text=self.response_text),
-                TemplateSendMessage(alt_text='KKBOX Result',
-                                    template=CarouselTemplate(self._get_carousel_columns(),
-                                                              image_aspect_ratio='square'))]
+        response_msg = TextSendMessage(text=self.response_text)
+        template_msg = self._create_template_message() if self.data_obj else None
+        return [response_msg, template_msg] if template_msg else [response_msg]
+
+    def _create_template_message(self):
+        return TemplateSendMessage(alt_text='KKBOX Result',
+                                   template=CarouselTemplate(self._get_carousel_columns(),
+                                                             image_aspect_ratio='square'))
 
     def _get_carousel_columns(self):
         return [CarouselColumn(thumbnail_image_url=kkbox_obj['photo'][1]['url'],

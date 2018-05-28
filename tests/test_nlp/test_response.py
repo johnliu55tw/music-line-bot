@@ -105,6 +105,11 @@ class KKBOXResponseTestCase(unittest.TestCase):
                                       data_obj=self.test_data_obj)
         self.assertIsInstance(resp, response.KKBOXResponse)
 
+    def test_init_empty_data_obj(self):
+        resp = response.KKBOXResponse(response_text='ResponseTextToUser',
+                                      data_obj=None)
+        self.assertIsInstance(resp, response.KKBOXResponse)
+
     def test_get_carousel_columns(self):
         resp = response.KKBOXResponse(response_text='ResponseTextToUser',
                                       data_obj=self.test_data_obj)
@@ -146,3 +151,15 @@ class KKBOXResponseTestCase(unittest.TestCase):
         self.assertIsInstance(msgs[1].template, CarouselTemplate)
         self.assertEqual(msgs[1].template.columns,
                          resp._get_carousel_columns())
+
+    def test_as_line_messages_empty_data_obj(self):
+        resp = response.KKBOXResponse(response_text='NothingFoundInKKBOX',
+                                      data_obj=None)
+
+        msgs = resp.as_line_messages()
+
+        self.assertIsInstance(msgs, list)
+        self.assertEqual(len(msgs), 1)
+
+        self.assertIsInstance(msgs[0], TextSendMessage)
+        self.assertEqual(msgs[0].text, 'NothingFoundInKKBOX')

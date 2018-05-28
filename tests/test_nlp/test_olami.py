@@ -180,6 +180,10 @@ class OlamiResponseFactoryTestCase(unittest.TestCase):
                   'url': 'https://event.kkbox.com/content/song/GqU6TvAvHxj7MfaCBo'}],
              'type': 'kkbox'}]
 
+        self.olami_kkbox_no_result_resp = [
+                {'desc_obj': {'result': '很抱歉，沒有找到你要的結果。', 'type': '', 'status': 0},
+                 'type': 'kkbox'}]
+
         self.not_implemented_resp = [
                 {'desc_obj': {'result': '主人，請問你想查哪裡的天氣呢？',
                               'type': 'weather',
@@ -207,6 +211,15 @@ class OlamiResponseFactoryTestCase(unittest.TestCase):
 
         self.assertEqual(nlp_resp.response_text, self.olami_kkbox_resp[0]['desc_obj']['result'])
         self.assertEqual(nlp_resp.data_obj, self.olami_kkbox_resp[0]['data_obj'])
+
+    def test_kkbox_no_result_resp(self):
+        nlp_resp = olami.response_factory(self.olami_kkbox_no_result_resp)
+
+        self.assertIsInstance(nlp_resp, response.KKBOXResponse)
+
+        self.assertEqual(nlp_resp.response_text,
+                         self.olami_kkbox_no_result_resp[0]['desc_obj']['result'])
+        self.assertEqual(nlp_resp.data_obj, None)
 
     def test_not_implemented_resp(self):
         nlp_resp = olami.response_factory(self.not_implemented_resp)

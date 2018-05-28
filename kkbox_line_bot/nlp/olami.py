@@ -85,7 +85,7 @@ def response_factory(olami_resp):
 
     elif first_match['type'] == 'kkbox':
         return response.KKBOXResponse(response_text=first_match['desc_obj']['result'],
-                                      data_obj=first_match['data_obj'])
+                                      data_obj=first_match.get('data_obj'))
 
     else:
         return response.NotImplementedResponse(type=first_match['type'])
