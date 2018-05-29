@@ -59,6 +59,25 @@ class NotImplementedResponseTestCase(unittest.TestCase):
                          'SomeTypeString這個功能還沒實作…請洽Line Bot的作者 :D')
 
 
+class QuestionResponseTestCase(unittest.TestCase):
+
+    def test_init(self):
+        obj = response.QuestionResponse(response_text='TheQuestion')
+
+        self.assertIsInstance(obj, response.QuestionResponse)
+
+    def test_as_line_messages(self):
+        resp = response.QuestionResponse(response_text='TheQuestion')
+
+        msgs = resp.as_line_messages()
+
+        self.assertIsInstance(msgs, list)
+        self.assertEqual(len(msgs), 1)
+
+        self.assertIsInstance(msgs[0], TextSendMessage)
+        self.assertEqual(msgs[0].text, 'TheQuestion')
+
+
 class KKBOXResponseTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -163,3 +182,27 @@ class KKBOXResponseTestCase(unittest.TestCase):
 
         self.assertIsInstance(msgs[0], TextSendMessage)
         self.assertEqual(msgs[0].text, 'NothingFoundInKKBOX')
+
+
+class WeatherResponseTestCase(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_init(self):
+        resp = response.WeatherResponse(response_text='ResponseTextToUser',
+                                        data_obj={'whatever': 'not important'})
+
+        self.assertIsInstance(resp, response.WeatherResponse)
+
+    def test_as_line_messages(self):
+        resp = response.WeatherResponse(response_text='ResponseTextToUser',
+                                        data_obj={'whatever': 'not important'})
+
+        msgs = resp.as_line_messages()
+
+        self.assertIsInstance(msgs, list)
+        self.assertEqual(len(msgs), 1)
+
+        self.assertIsInstance(msgs[0], TextSendMessage)
+        self.assertEqual(msgs[0].text, 'ResponseTextToUser')

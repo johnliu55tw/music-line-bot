@@ -83,9 +83,16 @@ def response_factory(olami_resp):
         return response.ErrorResponse(response_text=first_match['desc_obj']['result'],
                                       status_code=first_match['desc_obj']['status'])
 
+    elif first_match['type'] == 'question':
+        return response.QuestionResponse(response_text=first_match['desc_obj']['result'])
+
     elif first_match['type'] == 'kkbox':
         return response.KKBOXResponse(response_text=first_match['desc_obj']['result'],
                                       data_obj=first_match.get('data_obj'))
+
+    elif first_match['type'] == 'weather':
+        return response.WeatherResponse(response_text=first_match['desc_obj']['result'],
+                                        data_obj=first_match.get('data_obj'))
 
     else:
         return response.NotImplementedResponse(type=first_match['type'])

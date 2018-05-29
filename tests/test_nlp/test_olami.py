@@ -139,6 +139,13 @@ class OlamiResponseFactoryTestCase(unittest.TestCase):
                 {'desc_obj': {'result': '對不起，你說的我還不懂，能換個說法嗎？', 'status': '1003'},
                  'type': 'ds'}]
 
+        self.olami_question_resp = [
+                {'desc_obj':
+                    {'result': '主人，請問你想查哪裡的天氣呢？',
+                     'type': 'weather',
+                     'status': '0'},
+                 'type': 'question'}]
+
         self.olami_kkbox_resp = [
             {'desc_obj': {'result': '馬上為你播放。', 'type': '', 'status': 0},
              'data_obj': [
@@ -185,10 +192,72 @@ class OlamiResponseFactoryTestCase(unittest.TestCase):
                  'type': 'kkbox'}]
 
         self.not_implemented_resp = [
-                {'desc_obj': {'result': '主人，請問你想查哪裡的天氣呢？',
-                              'type': 'weather',
+                {'desc_obj': {'result': 'This is a weird response that has not been implemented.',
+                              'type': 'weird_stuff',
                               'status': '0'},
-                 'type': 'question'}]
+                 'type': 'some_weird_type'}]
+
+        self.olami_weather_resp = [
+                {'desc_obj':
+                    {'result': '台北今天晴中雨，最高溫度30.4℃，最低溫度26.1℃，東北東風軟風。',
+                     'status': 0},
+                 'type': 'weather',
+                 'data_obj': [
+                     {'date': 0,
+                      'weather_end': 0,
+                      'pm25': 0,
+                      'city': '台北',
+                      'temperature_low': '26.1',
+                      'weather_start': 0,
+                      'temperature_high': '30.4',
+                      'description': '2018年05月29日,晴中雨,東北東風軟風,最高溫度30.4℃,最低溫度26.1℃。',
+                      'is_querying': 1,
+                      'real_date': 1527523200000,
+                      'wind': '東北東風軟風'},
+                     {'date': 1,
+                      'weather_end': 0,
+                      'pm25': 0,
+                      'city': '台北',
+                      'temperature_low': '25.7',
+                      'weather_start': 0,
+                      'temperature_high': '28.5',
+                      'description': '2018年05月30日,晴，少雲中雨,西南西風無風,最高溫度28.5℃,最低溫度25.7℃。',
+                      'is_querying': 0,
+                      'real_date': 1527609600000,
+                      'wind': '西南西風無風'},
+                     {'date': 2,
+                      'weather_end': 0,
+                      'pm25': 0,
+                      'city': '台北',
+                      'temperature_low': '24.6',
+                      'weather_start': 0,
+                      'temperature_high': '29.4',
+                      'description': '2018年05月31日,多雲大雨,南南東風軟風,最高溫度29.4℃,最低溫度24.6℃。',
+                      'is_querying': 0,
+                      'real_date': 1527696000000,
+                      'wind': '南南東風軟風'},
+                     {'date': 3,
+                      'weather_end': 0,
+                      'pm25': 0,
+                      'city': '台北',
+                      'temperature_low': '24.7',
+                      'weather_start': 0,
+                      'temperature_high': '25.6',
+                      'description': '2018年06月01日,多雲大雨,東北東風微風,最高溫度25.6℃,最低溫度24.7℃。',
+                      'is_querying': 0,
+                      'real_date': 1527782400000,
+                      'wind': '東北東風微風'},
+                     {'date': 4,
+                      'weather_end': 0,
+                      'pm25': 0,
+                      'city': '台北',
+                      'temperature_low': '24.5',
+                      'weather_start': 0,
+                      'temperature_high': '24.8',
+                      'description': '2018年06月02日,陰，多雲大雨,北北東風微風,最高溫度24.8℃,最低溫度24.5℃。',
+                      'is_querying': 0,
+                      'real_date': 1527868800000,
+                      'wind': '北北東風微風'}]}]
 
     def test_error_timeout_resp(self):
         nlp_resp = olami.response_factory(self.olami_error_timeout_resp)
@@ -203,6 +272,13 @@ class OlamiResponseFactoryTestCase(unittest.TestCase):
         self.assertIsInstance(nlp_resp, response.ErrorResponse)
         self.assertEqual(nlp_resp.response_text,
                          self.olami_error_no_match_resp[0]['desc_obj']['result'])
+
+    def test_question_resp(self):
+        nlp_resp = olami.response_factory(self.olami_question_resp)
+
+        self.assertIsInstance(nlp_resp, response.QuestionResponse)
+        self.assertEqual(nlp_resp.response_text,
+                         self.olami_question_resp[0]['desc_obj']['result'])
 
     def test_kkbox_resp(self):
         nlp_resp = olami.response_factory(self.olami_kkbox_resp)
@@ -220,6 +296,13 @@ class OlamiResponseFactoryTestCase(unittest.TestCase):
         self.assertEqual(nlp_resp.response_text,
                          self.olami_kkbox_no_result_resp[0]['desc_obj']['result'])
         self.assertEqual(nlp_resp.data_obj, None)
+
+    def test_weather_resp(self):
+        nlp_resp = olami.response_factory(self.olami_weather_resp)
+
+        self.assertIsInstance(nlp_resp, response.WeatherResponse)
+
+        self.assertEqual(nlp_resp.response_text, self.olami_weather_resp[0]['desc_obj']['result'])
 
     def test_not_implemented_resp(self):
         nlp_resp = olami.response_factory(self.not_implemented_resp)
