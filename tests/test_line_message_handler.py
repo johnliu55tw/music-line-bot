@@ -65,7 +65,8 @@ class WebhookHandlerTestCase(unittest.TestCase):
                                                     signature=webhook_signature)
 
         m_olami.OlamiService.assert_called_with(app.config['OLAMI_APP_KEY'],
-                                                app.config['OLAMI_APP_SECRET'])
+                                                app.config['OLAMI_APP_SECRET'],
+                                                cusid=self.user_id)
         m_olami_svc.assert_called_with('TestWebhookMessage')
         m_line_bot_api.reply_message.assert_called_with(
                 self.reply_token,

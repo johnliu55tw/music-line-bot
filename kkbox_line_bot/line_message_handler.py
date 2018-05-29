@@ -18,7 +18,8 @@ webhook_handler = WebhookHandler(app.config['LINE_CHANNEL_SECRET'])
 def handle_text_message(event):
     logger.debug('event: ' + str(event))
     olami_svc = olami.OlamiService(app.config['OLAMI_APP_KEY'],
-                                   app.config['OLAMI_APP_SECRET'])
+                                   app.config['OLAMI_APP_SECRET'],
+                                   cusid=event.source.user_id)
     try:
         resp = olami_svc(event.message.text)
         reply = resp.as_line_messages()
