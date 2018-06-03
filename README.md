@@ -7,7 +7,7 @@ It's only been tested on Python 3.6, but should also support Python 3.5.
 
 Use this Line QR code to add the bot:
 
-![line-qr-code](https://qr-official.line.me/M/nx5NBQJZXE.png)
+![line-qr-code](./line_qr_code.png)
 
 This bot currently only has *KKBOX* and *weather* modules enabled for the OLAMI service.
 And since this is just for test, some debug and error messages will be directly forwarded to the user.
