@@ -7,7 +7,7 @@ name = "pypi"
 flask = "*"
 gunicorn = "*"
 line-bot-sdk = "*"
-requests = "*"
+requests = ">=2.20"
 
 [dev-packages]
 coverage = "*"
